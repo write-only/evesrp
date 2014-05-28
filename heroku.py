@@ -59,7 +59,7 @@ def configure_app(app, config):
         pass
     else:
         app.config['AUTH_METHODS'].append(BraveCore(core_private_key,
-                core_public_key, core_identifier))
+            core_public_key, core_identifier, url='http://localhost:8080'))
 
     if config.get('DEBUG') is not None:
         app.debug = True

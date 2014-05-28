@@ -37,43 +37,59 @@ class BraveCore(AuthMethod):
         token = request.args.get('token')
         if token is not None:
             info = self.api.core.info(token=token)
-            char_name = info.character.name
-            try:
-                user = CoreUser.query.filter_by(name=char_name,
-                        authmethod=self.name).one()
-                user.token = token
-            except NoResultFound:
-                user = CoreUser(name=char_name, authmethod=self.name,
-                        token=token)
-                db.session.add(user)
-            # Apply admin flag
-            user.admin = user.name in self.admins
-            # Sync up group membership
-            for group_name in info['tags']:
+            if info is not None:
+                # Figure out a name for this user
                 try:
-                    group = CoreGroup.query.filter_by(name=group_name,
+                    username = info.username
+                except AttributeError:
+                    try:
+                        characters = info.characters
+                        for character in characters:
+                            if character.primary:
+                                username = character.name
+                                break
+                        else:
+                            username = characters[0].name
+                    except AttributeError:
+                        characters = [info.character]
+                        username = info.character.name
+                # Retrieve this user
+                try:
+                    user = CoreUser.query.filter_by(name=username,
                             authmethod=self.name).one()
+                    user.token = token
                 except NoResultFound:
-                    group = CoreGroup(group_name, self.name)
-                    db.session.add(group)
-                user.groups.add(group)
-            for group in user.groups:
-                if group.name not in info['tags']:
-                    user.groups.remove(group)
-            # Sync pilot (just the primary for now)
-            pilot = Pilot.query.get(info.character.id)
-            if not pilot:
-                pilot = Pilot(user, char_name, info.character.id)
-                db.session.add(pilot)
-            else:
-                pilot.user = user
-            db.session.commit()
-            self.login_user(user)
-            # TODO Have a meaningful redirect for this
-            return redirect(url_for('index'))
-        else:
-            flash("Login failed.")
-            return redirect(url_for('login.login'))
+                    user = CoreUser(name=username, authmethod=self.name,
+                            token=token)
+                    db.session.add(user)
+                # Apply admin flag
+                user.admin = user.name in self.admins
+                # Sync up group membership
+                for group_name in info['tags']:
+                    try:
+                        group = CoreGroup.query.filter_by(name=group_name,
+                                authmethod=self.name).one()
+                    except NoResultFound:
+                        group = CoreGroup(group_name, self.name)
+                        db.session.add(group)
+                    user.groups.add(group)
+                for group in user.groups:
+                    if group.name not in info['tags']:
+                        user.groups.remove(group)
+                # Sync pilot
+                for character in characters:
+                    pilot = Pilot.query.get(character.id)
+                    if not pilot:
+                        pilot = Pilot(user, character.name, character.id)
+                        db.session.add(pilot)
+                    else:
+                        pilot.user = user
+                db.session.commit()
+                self.login_user(user)
+                # TODO Have a meaningful redirect for this
+                return redirect(url_for('index'))
+        flash("Login failed.")
+        return redirect(url_for('login.login'))
 
 
 class CoreUser(User):
