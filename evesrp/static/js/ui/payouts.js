@@ -37,30 +37,64 @@ EveSRP.ui.payouts = {
   renderRequest: function renderRequestPayout(request) {
     var $panelList = $('#requests'),
         $panel = $panelList.find('#request-' + request.id),
-        $newPanel = $(Handlebars.templates.payout_panel(request)),
-        $copyButtons;
+        //$newPanel = $(Handlebars.templates.payout_panel(request)),
+        $copyButtons, $newPanel, $modifiers, $actions, $actionCount,
+        $payoutButton, $newActions, $newModifiers, $oldStatus;
     if ($panel.length !== 0) {
-      // Remove old listeners and popover/tooltips
-      $copyButtons = $panel.find('.copy-btn');
-      $copyButtons.tooltip('destroy');
-      EveSRP.ui.clipboardClient.unclip($copyButtons);
-      $panel.find('.small-popover').popover('destroy');
-      if ($panel.find('table.in').length !== 0) {
-        $newPanel.find('table.collapse').addClass('in');
+      // Update Actions
+      $actions = $panel.find('table.actions');
+      $actionCount = $panel.find('.action-count');
+      $actionCount.text(request.actions.length);
+      $newActions = $(Handlebars.templates.payout_actions(request));
+      if ($actions.hasClass('in')) {
+        $newActions.addClass('in');
       }
-      $panel.replaceWith($newPanel);
+      $actions.replaceWith($newActions);
+      // Update the payout button text
+      $payoutButton = $panel.find('.payout-btn');
+      $payoutButton.attr('data-clipboard-text', request.payout_str);
+      $payoutButton.text(request.payout_str);
+      // Modifers can be hidden/revealed depending on if there are any.
+      $modifiers = $panel.find('.modifiers.popover');
+      $newModifiers = $(Handlebars.templates.payout_modifiers(request));
+      $modifiers.replaceWith($newModifiers);
+      if (request.modifiers) {
+        $panel.find('dt.modifiers-title').removeClass('hidden');
+      } else {
+        $panel.find('dt.modifiers-title').addClass('hidden');
+      }
+      // Update the color of the header/disable buttons when not approved
+      if ($panel.hasClass('panel-info')) {
+        $oldStatus = 'approved';
+      }
+      $panel.removeClass('panel-success panel-info panel-warning panel-danger');
+      $panel.addClass('panel-' + EveSRP.util.statusColor(request.status));
+      // Remove/add clipboard integration
+      $copyButtons = $panel.find('.copy-btn');
+      if (request.status !== 'approved') {
+        $copyButtons.tooltip('destroy');
+        EveSRP.ui.clipboardClient.unclip($copyButtons);
+        $panel.find('.small-popover').popover('destroy');
+      } else if ($oldStatus !== 'approved') {
+        EveSRP.ui.clipboardClient.clip($copyButtons);
+        $copyButtons.tooltip({trigger: 'manual'});
+        $panel.find('.small-popover').on('click', false).popover();
+        $('.null-link').on('click', function(ev) {
+          ev.preventDefault();
+        });
+      }
     } else {
-      $panelList.append($newPanel);
+      // Brand new request
+      $panelList.append(Handlebars.templates.payout_panel(request));
+      $panel = $panelList.find('#request-' + request.id);
+      $copyButtons = $panel.find('.copy-btn');
+      EveSRP.ui.clipboardClient.clip($copyButtons);
+      $copyButtons.tooltip({trigger: 'manual'});
+      $panel.find('.small-popover').on('click', false).popover();
+      $('.null-link').on('click', function(ev) {
+        ev.preventDefault();
+      });
     }
-    // Attach events and activate tooltips/popovers
-    $panel = $panelList.find('#request-' + request.id);
-    $copyButtons = $panel.find('.copy-btn');
-    EveSRP.ui.clipboardClient.clip($copyButtons);
-    $copyButtons.tooltip({trigger: 'manual'});
-    $panel.find('.small-popover').on('click', false).popover();
-    $('.null-link').on('click', function(ev) {
-      ev.preventDefault();
-    });
   },
 
   getRequests: function getPayoutRequests() {
