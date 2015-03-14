@@ -16,20 +16,13 @@
         <dt>Ship</dt>
         <dd>{{transformed . 'ship'}}</dd>
         {{#if modifiers}}
-        <dt>Modifiers</dt>
-        <dd>
-          <a class="small-popover" data-toggle="popover" data-trigger="focus" data-content="
-            <ul>
-              {{#each modifiers}}
-              {{#unless void}}
-              <li>{{value_str}}</li>
-              {{/unless}}
-              {{/each}}
-          </ul>" data-html="true" data-container="body" href="#" tabindex="0">Modifiers</a>
-        </dd>
+        <dt class="modifiers-title">Modifiers</dt>
+        {{else}}
+        <dt class="modifiers-title hidden">Modifiers</dt>
         {{/if}}
+        <dd>{{template 'payout_modifiers'}}</dd>
         <dt>Actions</dt>
-        <dd><a class="null-link" data-toggle="collapse" data-parent="#requests" href="#" data-target="#actions-{{id}}">{{count actions}}</a></dd>
+        <dd><a class="null-link action-count" data-toggle="collapse" data-parent="#requests" href="#" data-target="#actions-{{id}}">{{count actions}}</a></dd>
       </dl>
       <dl class="col-sm-6 dl-horizontal spaced">
         <dt>Division</dt>
@@ -40,7 +33,7 @@
         </dd>
         <dt>Payout</dt>
         <dd>
-          <button class="btn btn-default btn-xs copy-btn" data-clipboard-text="{{payout_str}}" data-toggle="tooltip" title="Copy '{{payout_str}}' to clipboard">{{payout_str}}</button>
+          <button class="btn btn-default btn-xs copy-btn payout-btn" data-clipboard-text="{{payout_str}}" data-toggle="tooltip" title="Copy '{{payout_str}}' to clipboard">{{payout_str}}</button>
         </dd>
         <dt>Reason</dt>
         <dd>
@@ -62,28 +55,5 @@
       </dl>
     </div>
   </div>
-  <table class="table collapse" id="actions-{{id}}">
-    <tr>
-      <th>Actions</th>
-      <th>User</th>
-      <th></th>
-      <th>Timestamp</th>
-    </tr>
-    {{#each actions}}
-    {{#compare type 'comment' operator='!=='}}
-    <tr class="{{status_color type}}">
-      <td>{{capitalize type}}</td>
-      <td>{{user.name}}</td>
-      {{#if note}}
-      <td>
-        <a class="small-popover" data-toggle="popover" data-trigger="focus" data-content="{{note}}" href="#" tabindex="0">Comment</a></td>
-      </td>
-      {{else}}
-      <td></td>
-      {{/if}}
-      <td>{{timestamp}}</td>
-    </tr>
-    {{/compare}}
-    {{/each}}
-  </table>
+  {{template 'payout_actions'}}
 </div>

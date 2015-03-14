@@ -61,3 +61,9 @@ Handlebars.registerHelper('transformed', function(request, attr) {
   }
   return request[attr];
 });
+
+Handlebars.registerHelper('template', function(templateName) {
+  var template = Handlebars.templates[templateName],
+      output = template(this);
+  return new Handlebars.SafeString(output);
+});

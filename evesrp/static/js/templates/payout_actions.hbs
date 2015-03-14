@@ -1,0 +1,24 @@
+<table class="table collapse actions" id="actions-{{id}}">
+  <tr>
+    <th>Actions</th>
+    <th>User</th>
+    <th></th>
+    <th>Timestamp</th>
+  </tr>
+  {{#each actions}}
+  {{#compare type 'comment' operator='!=='}}
+  <tr class="{{status_color type}}">
+    <td>{{capitalize type}}</td>
+    <td>{{user.name}}</td>
+    {{#if note}}
+    <td>
+      <a class="small-popover" data-toggle="popover" data-trigger="focus" data-content="{{note}}" href="#" tabindex="0">Comment</a></td>
+    </td>
+    {{else}}
+    <td></td>
+    {{/if}}
+    <td>{{timestamp}}</td>
+  </tr>
+  {{/compare}}
+  {{/each}}
+</table>

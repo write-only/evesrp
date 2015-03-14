@@ -17,20 +17,18 @@
           <dt>External Lossmail</dt>
           <dd><a href="{{ request.killmail_url }}" target="_blank">{{ request.id }} <i class="fa fa-external-link"></i></a></dd>
           <dt>Details</dt>
-          <dd><a class="small-popover" data-toggle="popover" data-trigger="focus" data-content="{{ request.details }}" data-container="body" href="#" tabindex="0">Details</a></dd>
+          <dd id="details-{{ request.id }}"><a class="small-popover" data-toggle="popover" data-trigger="focus" data-content="{{ request.details }}" data-container="body" href="#" tabindex="0">Details</a></dd>
           <dt>Ship</dt>
           <dd>{{ request.transformed.ship_type }}</dd>
-          {% if request.modifiers.count() > 0 %}
-          <dt>Modifiers</dt>
-          <dd><a class="small-popover" data-toggle="popover" data-trigger="focus" data-content="
+          <dt class="modifiers-title{{ ' hidden'|safe if request.modifiers.count() == 0 }}">Modifiers</dt>
+          <dd><a class="small-popover modifiers-popover {{ 'hidden' if request.modifiers.count() == 0}} " data-toggle="popover" data-trigger="focus" data-content="
             <ul>
               {% for modifier in request.modifiers if not modifier.voided %}
                 <li>{{ modifier }}</li>
               {% endfor %}
           </ul>" data-html="true" data-container="body" href="#" tabindex="0">Modifiers</a></dd>
-          {% endif %}
           <dt>Actions</dt>
-          <dd><a class="null-link" data-toggle="collapse" data-parent="#requests" href="#" data-target="#actions-{{ request.id }}">{{ request.actions|length }}</a></dd>
+          <dd><a class="null-link action-count" data-toggle="collapse" data-parent="#requests" href="#" data-target="#actions-{{ request.id }}">{{ request.actions|length }}</a></dd>
         </dl>
         <dl class="col-sm-6 dl-horizontal spaced">
           <dt>Division</dt>
@@ -38,7 +36,7 @@
           <dt>Pilot</dt>
           <dd>{{ clipboard_button(request.pilot, position='top', classes='btn btn-default btn-xs') }}</dd>
           <dt>Payout</dt>
-          <dd>{{ clipboard_button(request.payout.currency(), position='top', classes='btn btn-default btn-xs') }}</dd>
+          <dd>{{ clipboard_button(request.payout.currency(), position='top', classes='btn btn-default btn-xs payout-btn') }}</dd>
           <dt>Reason</dt>
           <dd>{{ clipboard_button("Payment for " ~ request.id, position='top', classes='btn btn-default btn-xs') }}</dd>
           <dt></dt>
@@ -53,7 +51,7 @@
         </dl>
       </div>
     </div>
-    <table class="table collapse" id="actions-{{ request.id }}">
+    <table class="table collapse actions" id="actions-{{ request.id }}">
       <tr>
         <th>Actions</th>
         <th>User</th>
