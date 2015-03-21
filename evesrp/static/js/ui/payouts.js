@@ -11,15 +11,17 @@ if (! ('ui' in EveSRP)) {
 EveSRP.ui.payouts = {
 
   markPaid: function markPaid(ev) {
-    var $form = $(ev.target).closest('form');
-    $.ajax( {
+    var $form = $(ev.target).closest('form'),
+        paidRequest;
+    paidRequest = $.ajax( {
       type: 'POST',
       url: $form.attr('action'),
+      cache: false,
       data: $form.serialize(),
       success: EveSRP.ui.payouts.renderRequest
     });
     // Update entire list of requests (if within 10 second cooldown period)
-    EveSRP.ui.payouts.getRequests();
+    paidRequest.always(EveSRP.ui.payouts.getRequests);
     return false;
   },
 
@@ -103,6 +105,7 @@ EveSRP.ui.payouts = {
       $.ajax( {
         type: 'GET',
         url: state.url,
+        cache: false,
         success: function(data) {
           _.each(data.requests, function(request) {
             EveSRP.ui.payouts.renderRequest(request);
