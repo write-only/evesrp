@@ -24,14 +24,8 @@ EveSRP.ui.payouts = {
   },
 
   copyUpdate: function copyUpdate(client, args) {
-    var $this = $(this),
-        timeStamp = (new Date).getTime(),
-        $panel = $this.closest('.panel');
-    // Update this request, while adhering to the ratelimit
-    if ((timeStamp - EveSRP.ui.payouts.lastRefresh) >
-        EveSRP.ui.payouts.refreshDelay) {
-      EveSRP.ui.payouts.updateRequest($panel.data('request-id'));
-    }
+    var $panel = $this.closest('.panel');
+    EveSRP.ui.payouts.updateRequest($panel.data('request-id'));
   },
 
   renderRequest: function renderRequestPayout(request) {
@@ -63,7 +57,7 @@ EveSRP.ui.payouts = {
       } else {
         $panel.find('dt.modifiers-title').addClass('hidden');
       }
-      // Update the color of the header/disable buttons when not approved
+      // Update the color of the header and disable buttons when not approved
       if ($panel.hasClass('panel-info')) {
         $oldStatus = 'approved';
       }
@@ -118,12 +112,34 @@ EveSRP.ui.payouts = {
     }
   },
 
+  lastRequested: {},
+  updatingRequests: [],
+
   updateRequest: function updatePayoutRequest(requestID) {
-    $.ajax( {
+    // Restrict individual updates to every 3 seconds, and only one XHR per
+    // request at a time.
+    var xhr, currentTime = (new Date).getTime();
+    if (_.contains(EveSRP.ui.payouts.updatingRequests, requestID)) {
+      console.log(requestID + " is already updating");
+      return;
+    }
+    if (_.has(EveSRP.ui.payouts.lastRequested, requestID)) {
+      if (currentTime - EveSRP.ui.payouts.lastRequested[requestID] < 3000) {
+        console.log("Skipping refresh of " + requestID);
+        return;
+      }
+    }
+    xhr = $.ajax( {
       type: 'GET',
       url: $SCRIPT_ROOT + '/request/' + requestID,
       success: EveSRP.ui.payouts.renderRequest
     });
+    xhr.always( function() {
+      EveSRP.ui.payouts.updatingRequests = _.without(
+        EveSRP.ui.payouts.updatingRequests, requestID);
+    });
+    EveSRP.ui.payouts.lastRequested[requestID] = currentTime;
+    EveSRP.ui.payouts.updatingRequests.push(requestID);
   },
 
   // Initialize to the parse time. This prevents trying to update the requests
@@ -131,12 +147,36 @@ EveSRP.ui.payouts = {
   lastRefresh: (new Date).getTime(),
   refreshDelay: 7000,
 
+  didScroll: false,
+
+  scrollUpdate: functionScrollUpdate() {
+    if (EveSRP.ui.payouts.didScroll) {
+      EveSRP.ui.payouts.didScroll = false;
+      EveSRP.ui.payouts.infiniteScroll();
+      EveSRP.ui.payouts.updateVisible();
+    }
+  },
+
   infiniteScroll: function infiniteScroll(ev) {
     var $window = $(window),
         $document = $(document);
     if ($window.scrollTop() > ($document.height() - $window.height() - 300)) {
       EveSRP.ui.payouts.getRequests();
     }
+  },
+
+  updateVisible: function updateVisible() {
+    var $requestTitles;
+    console.log("Updating visible requests");
+    $requestTitles = $('.panel-title');
+    $requestTitles.each( function(index, element) {
+      var $element = $(element)
+      if (EveSRP.util.isElementInViewport($element)) {
+        console.log("Request " + $element.data('request-id') + " visible");
+        EveSRP.ui.payouts.updateRequest(
+          $element.closest('.panel').data('request-id'));
+      }
+    });
   },
 
   setupEvents: function setupRequestListEvents() {
@@ -156,12 +196,16 @@ EveSRP.ui.payouts = {
     $('#requests').on('submit', EveSRP.ui.payouts.markPaid);
     // Watch the history for state changes
     $window.on('statechange', this.getRequests);
-    $window.on('scroll', EveSRP.ui.payouts.infiniteScroll);
     // Prevent default action for Action expansion links. Note, this doesn't
     // prevent bubbling of events, which is used by the collapse extension.
     $('.null-link').on('click', function(ev) {
       ev.preventDefault();
     });
+    // Update requests and add more as we scroll through the list
+    $window.on('scroll', function(ev) {
+      EveSRP.ui.payouts.didScroll = true;
+    });
+    setInterval(EveSRP.ui.payouts.scrollUpdate, 100);
   }
 };
 if ($('div#requests').length !== 0) {
